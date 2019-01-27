@@ -23,14 +23,14 @@ std::vector<float> dijkstra_sequential(const Graph &graph,
     distances[source_vertex] = 0.f;
 
     // --- Dijkstra iterations
-    for (auto iter_count = 0; iter_count < number_of_vertexes - 1; ++iter_count)
+    for (auto iter_count = 0ULL; iter_count < number_of_vertexes - 1; ++iter_count)
     {
         int current_vertex = graph.MinDistances(distances, finalized_verticies, source_vertex);
 
         finalized_verticies[current_vertex] = true;
 
         // For all unvisited neighbors of current vertex
-        for (auto v = 0; v < number_of_vertexes; ++v)
+        for (auto v = 0ULL; v < number_of_vertexes; ++v)
         {
             if (0 == graph.weight_matrix[current_vertex * number_of_vertexes + v] ||
                 FLT_MAX == distances[current_vertex])
@@ -55,8 +55,9 @@ std::vector<float> dijkstra_sequential(const Graph &graph,
         }
     }
 
+#if ENABLE_PATH_PRINT != 0
     std::cout << "Actual paths: " << std::endl;
-    for (auto i = 0; i < actual_path.size(); ++i)
+    for (auto i = 0ULL; i < actual_path.size(); ++i)
     {
         std::cout << "Path from " << source_vertex << " to " << i  << ": ";
         if (actual_path[i].size() == 0)
@@ -66,11 +67,12 @@ std::vector<float> dijkstra_sequential(const Graph &graph,
         }
 
         // std::cout << source_vertex << " -> ";
-        for (auto j = 0; j < actual_path[i].size(); ++j)
+        for (auto j = 0ULL; j < actual_path[i].size(); ++j)
         {
             std::cout << actual_path[i][j] << " -> ";
         }
         std::cout << i << std::endl;
     }
+#endif
     return distances;
 }

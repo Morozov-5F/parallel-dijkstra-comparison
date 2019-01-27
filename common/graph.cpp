@@ -1,7 +1,9 @@
 #include <iostream>
 #include <cfloat>
+#include <omp.h>
 
 #include "graph.hpp"
+
 
 Graph::Graph(int num_vertexes, int neighbors_per_vertex) :
                                 neighbors_per_vertex(neighbors_per_vertex),
@@ -32,7 +34,7 @@ void Graph::generate_data(int num_vertexes, int neighbors_per_vertex)
                 skip_iteration = true;
 
                 temp = rand() % num_vertexes;
-                for (int t = 0; t < temp_array.size(); ++t)
+                for (auto t = 0ULL; t < temp_array.size(); ++t)
                 {
                     if (temp == temp_array[t])
                     {
@@ -84,9 +86,9 @@ void Graph::PrintVertexData() const
 {
     auto num_vertices = this->vertex_array.size();
 
-    for (auto k = 0; k < num_vertices; ++k)
+    for (auto k = 0ULL; k < num_vertices; ++k)
     {
-        for (int l = 0; l < this->neighbors_per_vertex; ++l)
+        for (auto l = 0; l < this->neighbors_per_vertex; ++l)
         {
             auto edge = this->GetEdge(k, l);
             auto weight = this->GetWeight(k, l);
@@ -95,7 +97,7 @@ void Graph::PrintVertexData() const
         }
     }
 
-    for (int k = 0; k < num_vertices * this->neighbors_per_vertex; ++k)
+    for (auto k = 0ULL; k < num_vertices * this->neighbors_per_vertex; ++k)
     {
         std::cout << k << " " << this->edge_array[k] << " " << this->weight_array[k] << std::endl;
     }
@@ -106,9 +108,9 @@ void Graph::DisplayWeightMatrix() const
     auto num_vertices = this->vertex_array.size();
 
     std::cout << "Weight matrix" << std::endl;
-    for (auto k = 0; k < num_vertices; ++k)
+    for (auto k = 0ULL; k < num_vertices; ++k)
     {
-        for (auto l = 0; l < num_vertices; ++l)
+        for (auto l = 0ULL; l < num_vertices; ++l)
         {
             if (this->weight_matrix[k * num_vertices + l] < FLT_MAX)
             {
@@ -131,7 +133,7 @@ int Graph::MinDistances(const std::vector<float>& shortest_path,
     auto minIndex = start_vertex;
     auto min = FLT_MAX;
 
-    for (int v = 0; v < this->vertex_array.size(); v++)
+    for (auto v = 0ULL; v < this->vertex_array.size(); v++)
     {
         if (finalized_verticies[v] == false && shortest_path[v] <= min)
         {
@@ -141,4 +143,83 @@ int Graph::MinDistances(const std::vector<float>& shortest_path,
     }
 
     return minIndex;
+}
+
+int Graph::MinDistancesOMP(const std::vector<float>& shortest_path,
+                           const std::vector<bool>& finalized_verticies,
+                           int start_vertex) const
+{
+    int min_vertex = start_vertex;
+    float min_dist = FLT_MAX;
+
+    float thread_min_dist;
+    int thread_min_vertex;
+
+    #pragma omp parallel private(thread_min_dist, thread_min_vertex) shared(shortest_path, finalized_verticies, start_vertex, min_vertex, min_dist)
+    {
+        std::cout << omp_get_num_threads() << std::endl;
+        thread_min_dist = min_dist;
+        thread_min_vertex = min_vertex;
+
+        #pragma omp barrier
+
+        #pragma omp for nowait
+        for (auto v = 0ULL; v < this->vertex_array.size(); ++v)
+        {
+            if (finalized_verticies[v] == false && shortest_path[v] <= thread_min_dist)
+            {
+                thread_min_dist = shortest_path[v];
+                thread_min_vertex = v;
+            }
+        }
+        #pragma omp critical
+        {
+            if (thread_min_dist < min_dist)
+            {
+                min_dist = thread_min_dist;
+                min_vertex = thread_min_vertex;
+            }
+        }
+    }
+    return min_vertex;
+}
+
+
+int Graph::MinDistancesACC(const std::vector<float>& shortest_path,
+                           const std::vector<bool>& finalized_verticies,
+                           int start_vertex) const
+{
+    int min_vertex = start_vertex;
+    float min_dist = FLT_MAX;
+
+    float thread_min_dist;
+    int thread_min_vertex;
+
+    #pragma acc parallel private(thread_min_dist, thread_min_vertex) shared(shortest_path, finalized_verticies, start_vertex, min_vertex, min_dist)
+    {
+        std::cout << omp_get_num_threads() << std::endl;
+        thread_min_dist = min_dist;
+        thread_min_vertex = min_vertex;
+
+        #pragma omp barrier
+
+        #pragma acc loop
+        for (auto v = 0ULL; v < this->vertex_array.size(); ++v)
+        {
+            if (finalized_verticies[v] == false && shortest_path[v] <= thread_min_dist)
+            {
+                thread_min_dist = shortest_path[v];
+                thread_min_vertex = v;
+            }
+        }
+        #pragma omp critical
+        {
+            if (thread_min_dist < min_dist)
+            {
+                min_dist = thread_min_dist;
+                min_vertex = thread_min_vertex;
+            }
+        }
+    }
+    return min_vertex;
 }
