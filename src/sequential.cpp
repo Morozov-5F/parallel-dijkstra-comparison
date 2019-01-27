@@ -1,6 +1,7 @@
 #include "src/dijkstra.hpp"
 
 #include <iostream>
+#include <chrono>
 
 std::vector<float> dijkstra_sequential(const Graph &graph,
                                        int source_vertex)
@@ -11,30 +12,45 @@ std::vector<float> dijkstra_sequential(const Graph &graph,
     //                      or the shortest distance from the source node to i is
     //                      finalized
     std::vector<bool>  finalized_verticies(number_of_vertexes, false);
-    std::vector<float> shortest_path(number_of_vertexes, FLT_MAX);
+    std::vector<float> distances(number_of_vertexes, FLT_MAX);
 
     std::vector<std::vector<int>> actual_path(number_of_vertexes);
-
-    // shortest_path of the source vertex from itself is always 0
-    shortest_path[source_vertex] = 0.f;
+    for(auto&& path : actual_path)
+    {
+        path.push_back(source_vertex);
+    }
+    // distances of the source vertex from itself is always 0
+    distances[source_vertex] = 0.f;
 
     // --- Dijkstra iterations
     for (auto iter_count = 0; iter_count < number_of_vertexes - 1; ++iter_count)
     {
-        int current_vertex = graph.MinDistances(shortest_path, finalized_verticies, source_vertex);
+        int current_vertex = graph.MinDistances(distances, finalized_verticies, source_vertex);
 
         finalized_verticies[current_vertex] = true;
 
+        // For all unvisited neighbors of current vertex
         for (auto v = 0; v < number_of_vertexes; ++v)
         {
-            if (!finalized_verticies[v] &&
-                graph.weight_matrix[current_vertex * number_of_vertexes + v] &&
-                shortest_path[current_vertex] != FLT_MAX &&
-                shortest_path[current_vertex] + graph.weight_matrix[current_vertex * number_of_vertexes + v] < shortest_path[v])
+            if (0 == graph.weight_matrix[current_vertex * number_of_vertexes + v] ||
+                FLT_MAX == distances[current_vertex])
             {
-                shortest_path[v] = shortest_path[current_vertex] + graph.weight_matrix[current_vertex * number_of_vertexes + v];
-                actual_path[current_vertex].push_back(v);
-                std::cout << "shortest_path[" << v << "] = " << shortest_path[v] << std::endl;
+                continue;
+            }
+
+            if (finalized_verticies[v])
+            {
+                continue;
+            }
+
+            if (distances[current_vertex] + graph.weight_matrix[current_vertex * number_of_vertexes + v] < distances[v])
+            {
+                distances[v] = distances[current_vertex] + graph.weight_matrix[current_vertex * number_of_vertexes + v];
+
+                if (!actual_path[v].size() || *actual_path[v].end() != current_vertex)
+                {
+                    actual_path[v].push_back(current_vertex);
+                }
             }
         }
     }
@@ -49,12 +65,12 @@ std::vector<float> dijkstra_sequential(const Graph &graph,
             continue;
         }
 
-        std::cout << source_vertex << " -> ";
+        // std::cout << source_vertex << " -> ";
         for (auto j = 0; j < actual_path[i].size(); ++j)
         {
             std::cout << actual_path[i][j] << " -> ";
         }
         std::cout << i << std::endl;
     }
-    return shortest_path;
+    return distances;
 }
