@@ -45,5 +45,10 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
 # Print shortest paths as part of all the functions
 target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_PATH_PRINT=0)
 # Print results
-target_compile_definitions(${PROJECT_NAME} PRIVATE PRINT_RESULTS=0)
+target_compile_definitions(${PROJECT_NAME} PRIVATE PRINT_RESULTS=1)
 target_compile_definitions(${PROJECT_NAME} PRIVATE PRINT_GRAPH_DATA=0)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_CUDA=0)
+
+# algorithm parameters
+target_compile_definitions(${PROJECT_NAME} PRIVATE TOTAL_VERTICES=8)
+target_compile_definitions(${PROJECT_NAME} PRIVATE MAX_NEIGHBOUR_VERTICES=6)

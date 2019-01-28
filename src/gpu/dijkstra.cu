@@ -76,7 +76,7 @@ __global__  void Kernel2(const int * __restrict__ vertexArray, const int * __res
     }
 }
 
-std::vector<float> dijkstraGPU(const Graph &graph, int sourceVertex)
+std::vector<float> dijkstra_cuda(const Graph &graph, int sourceVertex)
 {
 
     // --- Create device-side adjacency-list, namely, vertex array Va, edge array Ea and weight array Wa from G(V,E,W)

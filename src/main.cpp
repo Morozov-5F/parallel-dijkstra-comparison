@@ -26,18 +26,24 @@ void print_duration(const std::string& name, std::chrono::time_point<std::chrono
 int main() {
 
     // --- Number of graph vertices
+#ifdef TOTAL_VERTICES
+    int num_vertices = TOTAL_VERTICES;
+#else
     int num_vertices = 1024 * 5;
-
+#endif
     // --- Number of edges per graph vertex
+#ifdef MAX_NEIGHBOUR_VERTICES
+    int neighbors_per_vertex = MAX_NEIGHBOUR_VERTICES;
+#else
     int neighbors_per_vertex = 128;
-
+#endif
     // --- Source vertex
     int sourceVertex = 0;
 
     std::chrono::time_point<std::chrono::high_resolution_clock> start;
     std::chrono::time_point<std::chrono::high_resolution_clock> finish;
 
-    std::cout << "Dijkstra's algorithm test, " << num_vertices << " vertices, " << neighbors_per_vertex << " neighbors per vertex" << std::endl;
+    std::cout << std::fixed << std::setw( 11 ) << std::setprecision( 6 ) << "Dijkstra's algorithm test, " << num_vertices << " vertices, " << neighbors_per_vertex << " neighbors per vertex" << std::endl;
     cl_context gpu_context, cpu_context;
     bool gpu_found = false, cpu_found = false;
     auto init_res = dijkstra_init_contexts(gpu_context, cpu_context);
@@ -113,13 +119,14 @@ int main() {
         shortest_distances_ocl_gpu.clear();
     }
 
-
-    // --- Allocate space for the h_shortestDistancesGPU
-    // float *h_shortestDistancesGPU = (float*)malloc(sizeof(float) * graph.numVertices);
-    // dijkstraGPU(&graph, sourceVertex, h_shortestDistancesGPU);
-
-    // printf("\nGPU results\n");
-    // for (int k = 0; k < numVertices; k++) printf("From vertex %i to vertex %i = %f\n", sourceVertex, k, h_shortestDistancesGPU[k]);
+#if ENABLE_CUDA == 1
+   std::chrono::high_resolution_clock::now();
+    auto shortest_distances_ocl_gpu = dijkstra_cuda(graph, sourceVertex);
+    finish = std::chrono::high_resolution_clock::now();
+    print_results("GPU results (CUDA)", shortest_distances_ocl_gpu, sourceVertex);
+    print_duration("GPU (CUDA)", start, finish);
+    shortest_distances_ocl_gpu.clear();
+#endif
 
     return 0;
 }
