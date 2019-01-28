@@ -70,10 +70,10 @@ int main() {
     }
 
       // --- Allocate memory for arrays
-    std::cout << "Generating graph...";
-    std::cout.flush();
-    Graph graph(num_vertices, neighbors_per_vertex);
-    std::cout << "\tDone" << std::endl;
+    // std::cout << "Generating graph...";
+    // std::cout.flush();
+    // Graph graph(num_vertices, neighbors_per_vertex);
+    // std::cout << "\tDone" << std::endl;
 
     // --- Displaying the adjacency list and constructing the adjacency matrix
     #if PRINT_GRAPH_DATA != 0
@@ -81,52 +81,61 @@ int main() {
         graph.DisplayWeightMatrix();
     #endif
 
-    // --- Running sequential Dijkstra on the CPU
-    start = std::chrono::high_resolution_clock::now();
-    auto shortest_distances_seq = dijkstra_sequential(graph, sourceVertex);
-    finish = std::chrono::high_resolution_clock::now();
-    print_results("CPU results", shortest_distances_seq, sourceVertex);
-    print_duration("CPU", start, finish);
-    shortest_distances_seq.clear();
-
-    // --- Running parallel Dijkstra on the CPU with OMP
-    start = std::chrono::high_resolution_clock::now();
-    auto shortest_distances_omp = dijkstra_omp(graph, sourceVertex);
-    finish = std::chrono::high_resolution_clock::now();
-    print_results("CPU results (OpenMP)", shortest_distances_omp, sourceVertex);
-    print_duration("CPU (OpenMP)", start, finish);
-    shortest_distances_omp.clear();
-
-    // --- Running parallel Dijkstra on the CPU with OpenCL
-    if (cpu_found)
+    for (int i = 256; i < 10 * 1024; i += 256)
     {
-        start = std::chrono::high_resolution_clock::now();
-        auto shortest_distances_ocl_cpu = dijkstra_opencl(graph, sourceVertex, cpu_context);
-        finish = std::chrono::high_resolution_clock::now();
-        print_results("CPU results (OpenCL)", shortest_distances_ocl_cpu, sourceVertex);
-        print_duration("CPU (OpenCL)", start, finish);
-        shortest_distances_ocl_cpu.clear();
-    }
+        std::cout << "Generating graph with " << i << " vertices and " << i / 128 << " neighbors per vertex...";
+        std::cout.flush();
+        Graph graph(i, i / 128);
+        std::cout << "\tDone" << std::endl;
 
-    // --- Running parallel Dijkstra on the GPU with OpenCL
-    if (gpu_found)
-    {
+        // --- Running sequential Dijkstra on the CPU
         start = std::chrono::high_resolution_clock::now();
-        auto shortest_distances_ocl_gpu = dijkstra_opencl(graph, sourceVertex, gpu_context);
+        auto shortest_distances_seq = dijkstra_sequential(graph, sourceVertex);
         finish = std::chrono::high_resolution_clock::now();
-        print_results("GPU results (OpenCL)", shortest_distances_ocl_gpu, sourceVertex);
-        print_duration("GPU (OpenCL)", start, finish);
+        print_results("CPU results", shortest_distances_seq, sourceVertex);
+        print_duration("CPU", start, finish);
+        shortest_distances_seq.clear();
+
+        // --- Running parallel Dijkstra on the CPU with OMP
+        start = std::chrono::high_resolution_clock::now();
+        auto shortest_distances_omp = dijkstra_omp(graph, sourceVertex);
+        finish = std::chrono::high_resolution_clock::now();
+        print_results("CPU results (OpenMP)", shortest_distances_omp, sourceVertex);
+        print_duration("CPU (OpenMP)", start, finish);
+        shortest_distances_omp.clear();
+
+        // --- Running parallel Dijkstra on the CPU with OpenCL
+        if (cpu_found)
+        {
+            start = std::chrono::high_resolution_clock::now();
+            auto shortest_distances_ocl_cpu = dijkstra_opencl(graph, sourceVertex, cpu_context);
+            finish = std::chrono::high_resolution_clock::now();
+            print_results("CPU results (OpenCL)", shortest_distances_ocl_cpu, sourceVertex);
+            print_duration("CPU (OpenCL)", start, finish);
+            shortest_distances_ocl_cpu.clear();
+        }
+
+        // --- Running parallel Dijkstra on the GPU with OpenCL
+        if (gpu_found)
+        {
+            start = std::chrono::high_resolution_clock::now();
+            auto shortest_distances_ocl_gpu = dijkstra_opencl(graph, sourceVertex, gpu_context);
+            finish = std::chrono::high_resolution_clock::now();
+            print_results("GPU results (OpenCL)", shortest_distances_ocl_gpu, sourceVertex);
+            print_duration("GPU (OpenCL)", start, finish);
+            shortest_distances_ocl_gpu.clear();
+        }
+
+    #if ENABLE_CUDA == 1
+        std::chrono::high_resolution_clock::now();
+        auto shortest_distances_ocl_gpu = dijkstra_cuda(graph, sourceVertex);
+        finish = std::chrono::high_resolution_clock::now();
+        print_results("GPU results (CUDA)", shortest_distances_ocl_gpu, sourceVertex);
+        print_duration("GPU (CUDA)", start, finish);
         shortest_distances_ocl_gpu.clear();
-    }
+    #endif
 
-#if ENABLE_CUDA == 1
-   std::chrono::high_resolution_clock::now();
-    auto shortest_distances_ocl_gpu = dijkstra_cuda(graph, sourceVertex);
-    finish = std::chrono::high_resolution_clock::now();
-    print_results("GPU results (CUDA)", shortest_distances_ocl_gpu, sourceVertex);
-    print_duration("GPU (CUDA)", start, finish);
-    shortest_distances_ocl_gpu.clear();
-#endif
+    }
 
     return 0;
 }

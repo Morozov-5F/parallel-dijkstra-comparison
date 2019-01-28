@@ -17,6 +17,7 @@ Graph::Graph(int num_vertexes, int neighbors_per_vertex) :
 
 void Graph::generate_data(int num_vertexes, int neighbors_per_vertex)
 {
+    #pragma omp parallel for shared(this->vertex_array)
     for (int i = 0; i < num_vertexes; ++i)
     {
         this->vertex_array[i] = i * neighbors_per_vertex;
@@ -56,6 +57,7 @@ void Graph::generate_data(int num_vertexes, int neighbors_per_vertex)
         }
     }
     // Generate weight matrix
+    #pragma omp parallel for shared(weight_matrix)
     for (auto k = 0; k < num_vertexes; ++k)
     {
         weight_matrix[k * num_vertexes + k] = 0.f;
@@ -63,6 +65,7 @@ void Graph::generate_data(int num_vertexes, int neighbors_per_vertex)
 
     for (auto k = 0; k < num_vertexes; ++k)
     {
+        #pragma omp parallel for shared(neighbors_per_vertex, this->edge_array, this->vertex_array, this->weight_array, weight_matrix, k)
         for (int l = 0; l < neighbors_per_vertex; ++l)
         {
             auto edge = this->edge_array[this->vertex_array[k] + l];

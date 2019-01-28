@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 
 SET(PROJECT_NAME dijkstra)
 
-project(${PROJECT_NAME} LANGUAGES CXX CUDA)
+project(${PROJECT_NAME} LANGUAGES CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -25,9 +25,9 @@ if (OpenACC_CXX_FOUND)
 endif()
 
 # Target for CUDA part
-add_library(${PROJECT_NAME}_cuda STATIC src/gpu/dijkstra.cu)
-target_compile_features(${PROJECT_NAME}_cuda PUBLIC cxx_std_11)
-set_target_properties(${PROJECT_NAME}_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+# add_library(${PROJECT_NAME}_cuda STATIC src/gpu/dijkstra.cu)
+# target_compile_features(${PROJECT_NAME}_cuda PUBLIC cxx_std_11)
+# set_target_properties(${PROJECT_NAME}_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 # Target for main executable
 add_executable(${PROJECT_NAME} src/main.cpp src/parallel.cpp src/parallel_cl.cpp src/parallel_omp.cpp src/sequential.cpp common/graph.cpp)
@@ -45,10 +45,10 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
 # Print shortest paths as part of all the functions
 target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_PATH_PRINT=0)
 # Print results
-target_compile_definitions(${PROJECT_NAME} PRIVATE PRINT_RESULTS=1)
+target_compile_definitions(${PROJECT_NAME} PRIVATE PRINT_RESULTS=0)
 target_compile_definitions(${PROJECT_NAME} PRIVATE PRINT_GRAPH_DATA=0)
 target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_CUDA=0)
 
 # algorithm parameters
-target_compile_definitions(${PROJECT_NAME} PRIVATE TOTAL_VERTICES=8)
-target_compile_definitions(${PROJECT_NAME} PRIVATE MAX_NEIGHBOUR_VERTICES=6)
+# target_compile_definitions(${PROJECT_NAME} PRIVATE TOTAL_VERTICES=1024)
+# target_compile_definitions(${PROJECT_NAME} PRIVATE MAX_NEIGHBOUR_VERTICES=512)
