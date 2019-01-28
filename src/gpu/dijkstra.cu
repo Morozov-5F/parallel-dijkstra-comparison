@@ -75,6 +75,7 @@ __global__  void Kernel2(const int * __restrict__ vertexArray, const int * __res
         updatingShortestDistances[tid] = shortestDistances[tid];
     }
 }
+
 std::vector<float> dijkstraGPU(const Graph &graph, int sourceVertex)
 {
 
@@ -93,7 +94,7 @@ std::vector<float> dijkstraGPU(const Graph &graph, int sourceVertex)
     float   *d_shortestDistances;           gpuErrchk(cudaMalloc(&d_shortestDistances, sizeof(float) * graph.vertex_array.size()));
     float   *d_updatingShortestDistances;   gpuErrchk(cudaMalloc(&d_updatingShortestDistances, sizeof(float) * graph.vertex_array.size()));
 
-    std::vector<bool> h_finalizedVertices(graph.vertex_array.size());
+    bool * h_finalizedVertices = new bool[graph.vertex_array.size()];
 
     // --- Initialize mask Ma to false, cost array Ca and Updating cost array Ua to \u221e
     initializeArrays <<<iDivUp(graph.vertex_array.size(), BLOCK_SIZE), BLOCK_SIZE >>>(d_finalizedVertices, d_shortestDistances,
@@ -102,9 +103,9 @@ std::vector<float> dijkstraGPU(const Graph &graph, int sourceVertex)
     gpuErrchk(cudaDeviceSynchronize());
 
     // --- Read mask array from device -> host
-    gpuErrchk(cudaMemcpy(h_finalizedVertices.data(), d_finalizedVertices, sizeof(bool) * h_finalizedVertices.size(), cudaMemcpyDeviceToHost));
+    gpuErrchk(cudaMemcpy(h_finalizedVertices, d_finalizedVertices, sizeof(bool) * graph.vertex_array.size(), cudaMemcpyDeviceToHost));
 
-    while (std::all_of(h_finalizedVertices.begin(), h_finalizedVertices.end(), [](bool x) { return !x; })) {
+    while (std::all_of(h_finalizedVertices, h_finalizedVertices + graph.vertex_array.size(), [](bool x) { return !x; })) {
 
         // --- In order to improve performance, we run some number of iterations without reading the results.  This might result
         //     in running more iterations than necessary at times, but it will in most cases be faster because we are doing less
@@ -121,12 +122,12 @@ std::vector<float> dijkstraGPU(const Graph &graph, int sourceVertex)
             gpuErrchk(cudaDeviceSynchronize());
         }
 
-        gpuErrchk(cudaMemcpy(h_finalizedVertices.data(), d_finalizedVertices, sizeof(bool) * h_finalizedVertices.size(), cudaMemcpyDeviceToHost));
+        gpuErrchk(cudaMemcpy(h_finalizedVertices, d_finalizedVertices, sizeof(bool) * graph.vertex_array.size(), cudaMemcpyDeviceToHost));
     }
 
     // --- Copy the result to host
     std::vector<float> shortest_distance(graph.vertex_array.size());
-    gpuErrchk(cudaMemcpy(shortest_distance.data, d_shortestDistances, sizeof(float) * shortest_distance.size(), cudaMemcpyDeviceToHost));
+    gpuErrchk(cudaMemcpy(shortest_distance.data(), d_shortestDistances, sizeof(float) * shortest_distance.size(), cudaMemcpyDeviceToHost));
 
     gpuErrchk(cudaFree(d_vertexArray));
     gpuErrchk(cudaFree(d_edgeArray));

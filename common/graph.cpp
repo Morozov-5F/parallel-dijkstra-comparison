@@ -157,7 +157,6 @@ int Graph::MinDistancesOMP(const std::vector<float>& shortest_path,
 
     #pragma omp parallel private(thread_min_dist, thread_min_vertex) shared(shortest_path, finalized_verticies, start_vertex, min_vertex, min_dist)
     {
-        std::cout << omp_get_num_threads() << std::endl;
         thread_min_dist = min_dist;
         thread_min_vertex = min_vertex;
 

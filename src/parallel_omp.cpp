@@ -20,8 +20,6 @@ std::vector<float> dijkstra_omp(const Graph &graph,
     // distances of the source vertex from itself is always 0
     distances[source_vertex] = 0.f;
 
-    omp_set_dynamic(0);     // Explicitly disable dynamic teams
-
     // --- Dijkstra iterations
     for (auto iter_count = 0ULL; iter_count < number_of_vetecies - 1; ++iter_count)
     {
