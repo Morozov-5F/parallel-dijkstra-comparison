@@ -1,5 +1,8 @@
 #include "src/dijkstra.hpp"
 
+#include <algorithm>
+#include <iostream>
+
 #include "Utilities.cuh"
 
 #define NUM_ASYNCHRONOUS_ITERATIONS 20  // Number of async loop iterations before attempting to read results back
@@ -78,33 +81,45 @@ __global__  void Kernel2(const int * __restrict__ vertexArray, const int * __res
 
 std::vector<float> dijkstra_cuda(const Graph &graph, int sourceVertex)
 {
-
+    std::cout << "Started" << std::endl;
     // --- Create device-side adjacency-list, namely, vertex array Va, edge array Ea and weight array Wa from G(V,E,W)
-    int     *d_vertexArray;         gpuErrchk(cudaMalloc(&d_vertexArray, sizeof(int)   * graph.vertex_array.size()));
-    int     *d_edgeArray;           gpuErrchk(cudaMalloc(&d_edgeArray,   sizeof(int)   * graph.edge_array.size()));
-    float   *d_weightArray;         gpuErrchk(cudaMalloc(&d_weightArray, sizeof(float) * graph.weight_array.size()));
-
+    int     *d_vertexArray;
+    auto cuda_err = cudaMalloc(&d_vertexArray, sizeof(int) * graph.vertex_array.size());
+    std::cout << cuda_err << std::endl;
+    
+    std::cout << "Vertex array initializaed" << std::endl;
+    int     *d_edgeArray;           cudaMalloc(&d_edgeArray,   sizeof(int) * graph.edge_array.size());
+    std::cout << "Edge array initializaed" << std::endl;
+    float   *d_weightArray;         cudaMalloc(&d_weightArray, sizeof(float) * graph.weight_array.size());
+    std::cout << "Weight array initializaed" << std::endl;
+    
     // --- Copy adjacency-list to the device
-    gpuErrchk(cudaMemcpy(d_vertexArray, graph.vertex_array.data(), sizeof(int) * graph.vertex_array.size(), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(d_edgeArray,   graph.edge_array.data(), sizeof(int) * graph.edge_array.size(), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(d_weightArray, graph.weight_array.data(), sizeof(float) * graph.weight_array.size(), cudaMemcpyHostToDevice));
+    cudaMemcpy(d_vertexArray, graph.vertex_array.data(), sizeof(int) * graph.vertex_array.size(), cudaMemcpyHostToDevice);
+    std::cout << "Vertex array copied" << std::endl;	   
+    cudaMemcpy(d_edgeArray,   graph.edge_array.data(), sizeof(int) * graph.edge_array.size(), cudaMemcpyHostToDevice);
+    std::cout << "Edge array copied" << std::endl;	   
+    cudaMemcpy(d_weightArray, graph.weight_array.data(), sizeof(float) * graph.weight_array.size(), cudaMemcpyHostToDevice);
+    std::cout << "Weight array copied" << std::endl;	   
 
     // --- Create mask array Ma, cost array Ca and updating cost array Ua of size V
-    bool    *d_finalizedVertices;           gpuErrchk(cudaMalloc(&d_finalizedVertices, sizeof(bool)   * graph.vertex_array.size()));
-    float   *d_shortestDistances;           gpuErrchk(cudaMalloc(&d_shortestDistances, sizeof(float) * graph.vertex_array.size()));
-    float   *d_updatingShortestDistances;   gpuErrchk(cudaMalloc(&d_updatingShortestDistances, sizeof(float) * graph.vertex_array.size()));
+    bool    *d_finalizedVertices;           cudaMalloc(&d_finalizedVertices, sizeof(bool)  * graph.vertex_array.size());
+    std::cout << "Visited array created" << std::endl;	   
+    float   *d_shortestDistances;           cudaMalloc(&d_shortestDistances, sizeof(float) * graph.vertex_array.size());
+    std::cout << "Path array created" << std::endl;	   
+    float   *d_updatingShortestDistances;   cudaMalloc(&d_updatingShortestDistances, sizeof(float) * graph.vertex_array.size());
+    std::cout << "Updating array created" << std::endl;	   
 
     bool * h_finalizedVertices = new bool[graph.vertex_array.size()];
 
     // --- Initialize mask Ma to false, cost array Ca and Updating cost array Ua to \u221e
     initializeArrays <<<iDivUp(graph.vertex_array.size(), BLOCK_SIZE), BLOCK_SIZE >>>(d_finalizedVertices, d_shortestDistances,
                                d_updatingShortestDistances, sourceVertex, graph.vertex_array.size());
-    gpuErrchk(cudaPeekAtLastError());
-    gpuErrchk(cudaDeviceSynchronize());
+    // gpuErrchk(cudaPeekAtLastError());
+    // gpuErrchk(cudaDeviceSynchronize());
 
     // --- Read mask array from device -> host
-    gpuErrchk(cudaMemcpy(h_finalizedVertices, d_finalizedVertices, sizeof(bool) * graph.vertex_array.size(), cudaMemcpyDeviceToHost));
-
+    cudaMemcpy(h_finalizedVertices, d_finalizedVertices, sizeof(bool) * graph.vertex_array.size(), cudaMemcpyDeviceToHost);
+    std::cout << "Starting stuff" << std::endl;
     while (std::all_of(h_finalizedVertices, h_finalizedVertices + graph.vertex_array.size(), [](bool x) { return !x; })) {
 
         // --- In order to improve performance, we run some number of iterations without reading the results.  This might result
@@ -114,27 +129,27 @@ std::vector<float> dijkstra_cuda(const Graph &graph, int sourceVertex)
 
             Kernel1 <<<iDivUp(graph.vertex_array.size(), BLOCK_SIZE), BLOCK_SIZE >>>(d_vertexArray, d_edgeArray, d_weightArray, d_finalizedVertices, d_shortestDistances,
                                                             d_updatingShortestDistances, graph.vertex_array.size(), graph.edge_array.size());
-            gpuErrchk(cudaPeekAtLastError());
-            gpuErrchk(cudaDeviceSynchronize());
+            // gpuErrchk(cudaPeekAtLastError());
+            // gpuErrchk(cudaDeviceSynchronize());
             Kernel2 <<<iDivUp(graph.vertex_array.size(), BLOCK_SIZE), BLOCK_SIZE >>>(d_vertexArray, d_edgeArray, d_weightArray, d_finalizedVertices, d_shortestDistances, d_updatingShortestDistances,
                                                             graph.vertex_array.size());
-            gpuErrchk(cudaPeekAtLastError());
-            gpuErrchk(cudaDeviceSynchronize());
+            // gpuErrchk(cudaPeekAtLastError());
+            // gpuErrchk(cudaDeviceSynchronize());
         }
 
-        gpuErrchk(cudaMemcpy(h_finalizedVertices, d_finalizedVertices, sizeof(bool) * graph.vertex_array.size(), cudaMemcpyDeviceToHost));
+        cudaMemcpy(h_finalizedVertices, d_finalizedVertices, sizeof(bool) * graph.vertex_array.size(), cudaMemcpyDeviceToHost);
     }
-
+    std::cout << "finished!" << std::endl;
     // --- Copy the result to host
     std::vector<float> shortest_distance(graph.vertex_array.size());
-    gpuErrchk(cudaMemcpy(shortest_distance.data(), d_shortestDistances, sizeof(float) * shortest_distance.size(), cudaMemcpyDeviceToHost));
+    cudaMemcpy(shortest_distance.data(), d_shortestDistances, sizeof(float) * shortest_distance.size(), cudaMemcpyDeviceToHost);
 
-    gpuErrchk(cudaFree(d_vertexArray));
-    gpuErrchk(cudaFree(d_edgeArray));
-    gpuErrchk(cudaFree(d_weightArray));
-    gpuErrchk(cudaFree(d_finalizedVertices));
-    gpuErrchk(cudaFree(d_shortestDistances));
-    gpuErrchk(cudaFree(d_updatingShortestDistances));
+    cudaFree(d_vertexArray) ;
+    cudaFree(d_edgeArray) ;
+    cudaFree(d_weightArray) ;
+    cudaFree(d_finalizedVertices) ;
+    cudaFree(d_shortestDistances) ;
+    cudaFree(d_updatingShortestDistances) ;
 
     return shortest_distance;
 }

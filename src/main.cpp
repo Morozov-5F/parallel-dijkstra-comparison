@@ -1,5 +1,7 @@
 #include <iostream>
 #include <iomanip>
+#include <chrono>
+
 
 #include <omp.h>
 
@@ -52,10 +54,10 @@ int main() {
     {
         case OCL_INIT_NO_DEVICES:
             std::cerr << "No OpenCL devices found" << std::endl;
-            exit(1);
+	    break;
         case OCL_INIT_NO_PLATFORM:
             std::cerr << "No OpenCL platform found" << std::endl;
-            exit(1);
+	    break;
         case OCL_INIT_CPU_ONLY:
             cpu_found = true;
             std::cerr << "Suitable GPU for OpenCL was not found on the system" << std::endl;
@@ -81,11 +83,11 @@ int main() {
         graph.DisplayWeightMatrix();
     #endif
 
-    for (int i = 256; i < 10 * 1024; i += 256)
+    for (int i = 8; i < 9; i += 256)
     {
-        std::cout << "Generating graph with " << i << " vertices and " << i / 128 << " neighbors per vertex...";
+        std::cout << "Generating graph with " << i << " vertices and " << 6 << " neighbors per vertex...";
         std::cout.flush();
-        Graph graph(i, i / 128);
+        Graph graph(i, 6);
         std::cout << "\tDone" << std::endl;
 
         // --- Running sequential Dijkstra on the CPU

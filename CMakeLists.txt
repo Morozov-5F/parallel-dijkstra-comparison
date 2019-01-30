@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 
 SET(PROJECT_NAME dijkstra)
 
-project(${PROJECT_NAME} LANGUAGES CXX)
+project(${PROJECT_NAME} LANGUAGES CXX CUDA)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -25,15 +25,16 @@ if (OpenACC_CXX_FOUND)
 endif()
 
 # Target for CUDA part
-# add_library(${PROJECT_NAME}_cuda STATIC src/gpu/dijkstra.cu)
-# target_compile_features(${PROJECT_NAME}_cuda PUBLIC cxx_std_11)
-# set_target_properties(${PROJECT_NAME}_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+add_library(${PROJECT_NAME}_cuda STATIC src/gpu/dijkstra.cu src/gpu/Utilities.cu)
+target_compile_features(${PROJECT_NAME}_cuda PUBLIC cxx_std_11)
+set_target_properties(${PROJECT_NAME}_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+CUDA_ADD_CUBLAS_TO_TARGET(${PROJECT_NAME}_cuda)
 
 # Target for main executable
 add_executable(${PROJECT_NAME} src/main.cpp src/parallel.cpp src/parallel_cl.cpp src/parallel_omp.cpp src/sequential.cpp common/graph.cpp)
 target_link_libraries(${PROJECT_NAME} ${OPENCL_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
-# target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_cuda)
+target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_cuda)
 configure_file(src/gpu/dijkstra.cl ${CMAKE_CURRENT_BINARY_DIR}/dijkstra.cl COPYONLY)
 
 # target_compile_options(${PROJECT_NAME} PRIVATE )
@@ -45,9 +46,9 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
 # Print shortest paths as part of all the functions
 target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_PATH_PRINT=0)
 # Print results
-target_compile_definitions(${PROJECT_NAME} PRIVATE PRINT_RESULTS=0)
+target_compile_definitions(${PROJECT_NAME} PRIVATE PRINT_RESULTS=1)
 target_compile_definitions(${PROJECT_NAME} PRIVATE PRINT_GRAPH_DATA=0)
-target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_CUDA=0)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_CUDA=1)
 
 # algorithm parameters
 # target_compile_definitions(${PROJECT_NAME} PRIVATE TOTAL_VERTICES=1024)
