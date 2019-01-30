@@ -149,7 +149,7 @@ int main() {
         auto shortest_distances_ocl_gpu = dijkstra_cuda(graph, sourceVertex);
         finish = std::chrono::high_resolution_clock::now();
         print_results("GPU results (CUDA)", shortest_distances_ocl_gpu, sourceVertex);
-        print_duration("GPU (CUDA)", start, finish);
+        print_duration("GPU (CUDA)", start, finish, out_file);
         shortest_distances_ocl_gpu.clear();
     #endif
 
