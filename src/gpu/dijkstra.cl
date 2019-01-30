@@ -19,14 +19,19 @@
 ///
 /// This is part 1 of the Kernel from Algorithm 4 in the paper
 ///
-__kernel  void OCL_SSSP_KERNEL1(__global int *vertexArray, __global int *edgeArray, __global float *weightArray,
-                               __global int *maskArray, __global float *costArray, __global float *updatingCostArray,
-                               int vertexCount, int edgeCount )
+__kernel  void OCL_SSSP_KERNEL1(__global int *vertexArray,
+                                __global int *edgeArray,
+                                __global float *weightArray,
+                                __global int *maskArray,
+                                __global float *costArray,
+                                __global float *updatingCostArray,
+                                int vertexCount,
+                                int edgeCount)
 {
     // access thread id
     int tid = get_global_id(0);
 
-    if ( maskArray[tid] != 0 )
+    if (maskArray[tid] != 0)
     {
         maskArray[tid] = 0;
 
@@ -41,7 +46,7 @@ __kernel  void OCL_SSSP_KERNEL1(__global int *vertexArray, __global int *edgeArr
             edgeEnd = edgeCount;
         }
 
-        for(int edge = edgeStart; edge < edgeEnd; edge++)
+        for (int edge = edgeStart; edge < edgeEnd; edge++)
         {
             int nid = edgeArray[edge];
 
@@ -86,7 +91,6 @@ __kernel void initializeBuffers( __global int *maskArray, __global float *costAr
 {
     // access thread id
     int tid = get_global_id(0);
-
 
     if (sourceVertex == tid)
     {

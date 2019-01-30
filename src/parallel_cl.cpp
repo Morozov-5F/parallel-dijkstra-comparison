@@ -23,7 +23,7 @@ pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 ///
 //  Macro Options
 //
-#define NUM_ASYNCHRONOUS_ITERATIONS 10  // Number of async loop iterations before attempting to read results back
+#define NUM_ASYNCHRONOUS_ITERATIONS 20  // Number of async loop iterations before attempting to read results back
 
 ///
 //  Function prototypes
@@ -518,8 +518,10 @@ ocl_init_result_t dijkstra_init_contexts(cl_context &gpu_context, cl_context &cp
         return OCL_INIT_NO_PLATFORM;
     }
     print_device_info();
+
     // create the OpenCL context on available GPU devices
-    gpu_context = clCreateContextFromType(0, CL_DEVICE_TYPE_GPU, NULL, NULL, &err_num);
+    cl_context_properties properties[] = {CL_CONTEXT_PLATFORM, (unsigned int) platform, 0};
+    gpu_context = clCreateContextFromType(properties, CL_DEVICE_TYPE_GPU, NULL, NULL, &err_num);
     if (err_num != CL_SUCCESS)
     {
         std::cout << "No GPU devices found." << std::endl;
@@ -527,7 +529,7 @@ ocl_init_result_t dijkstra_init_contexts(cl_context &gpu_context, cl_context &cp
     }
 
     // Create an OpenCL context on available CPU devices
-    cpu_context = clCreateContextFromType(0, CL_DEVICE_TYPE_CPU, NULL, NULL, &err_num);
+    cpu_context = clCreateContextFromType(properties, CL_DEVICE_TYPE_CPU, NULL, NULL, &err_num);
     if (err_num != CL_SUCCESS)
     {
         std::cout << "No CPU devices found." << std::endl;
