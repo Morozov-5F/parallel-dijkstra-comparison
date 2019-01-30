@@ -520,7 +520,7 @@ ocl_init_result_t dijkstra_init_contexts(cl_context &gpu_context, cl_context &cp
     print_device_info();
 
     // create the OpenCL context on available GPU devices
-    cl_context_properties properties[] = {CL_CONTEXT_PLATFORM, (unsigned int) platform, 0};
+    cl_context_properties properties[] = {CL_CONTEXT_PLATFORM, (cl_context_properties) platform, 0};
     gpu_context = clCreateContextFromType(properties, CL_DEVICE_TYPE_GPU, NULL, NULL, &err_num);
     if (err_num != CL_SUCCESS)
     {

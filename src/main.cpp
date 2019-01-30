@@ -1,28 +1,38 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
+#include <fstream>
 
 
 #include <omp.h>
-
 #include "src/dijkstra.hpp"
 
 void print_results(const std::string& msg, const std::vector<float> &res, int source_vertex)
 {
-    #if PRINT_RESULTS != 0
+#if PRINT_RESULTS != 0
     std::cout << std::endl << msg << std::endl;
     for (auto k = 0ULL; k < res.size(); k++)
     {
         std::cout << "From vertex " << source_vertex << " to vertex " << k << " = " << res[k] << std::endl;
     }
-    #endif
+#else
+    (void)msg;
+    (void)res;
+    (void)source_vertex;
+#endif
 }
 
 void print_duration(const std::string& name, std::chrono::time_point<std::chrono::high_resolution_clock> start,
-                    std::chrono::time_point<std::chrono::high_resolution_clock> finish)
+                    std::chrono::time_point<std::chrono::high_resolution_clock> finish,
+                    std::ofstream &output_file)
 {
     std::chrono::duration<double> elapsed = finish - start;
     std::cout << std::fixed << std::setw( 11 ) << std::setprecision( 6 ) << "Duration of " << name << " algorithm: " << elapsed.count() << " seconds" << std::endl;
+
+    if (output_file.good())
+    {
+        output_file << std::fixed << std::setw( 11 ) << std::setprecision( 6 ) << " " << elapsed.count();
+    }
 }
 
 int main() {
@@ -31,7 +41,7 @@ int main() {
 #ifdef TOTAL_VERTICES
     int num_vertices = TOTAL_VERTICES;
 #else
-    int num_vertices = 1024 * 5;
+    int num_vertices = 1024 * 20;
 #endif
     // --- Number of edges per graph vertex
 #ifdef MAX_NEIGHBOUR_VERTICES
@@ -44,6 +54,8 @@ int main() {
 
     std::chrono::time_point<std::chrono::high_resolution_clock> start;
     std::chrono::time_point<std::chrono::high_resolution_clock> finish;
+
+    std::ofstream out_file("output.dat");
 
     std::cout << std::fixed << std::setw( 11 ) << std::setprecision( 6 ) << "Dijkstra's algorithm test, " << num_vertices << " vertices, " << neighbors_per_vertex << " neighbors per vertex" << std::endl;
     cl_context gpu_context, cpu_context;
@@ -71,11 +83,13 @@ int main() {
             break;
     }
 
+#if 0
       // --- Allocate memory for arrays
-    // std::cout << "Generating graph...";
-    // std::cout.flush();
-    // Graph graph(num_vertices, neighbors_per_vertex);
-    // std::cout << "\tDone" << std::endl;
+    std::cout << "Generating graph...";
+    std::cout.flush();
+    Graph graph(num_vertices, neighbors_per_vertex);
+    std::cout << "\tDone" << std::endl;
+#endif
 
     // --- Displaying the adjacency list and constructing the adjacency matrix
     #if PRINT_GRAPH_DATA != 0
@@ -83,19 +97,21 @@ int main() {
         graph.DisplayWeightMatrix();
     #endif
 
-    for (int i = 8; i < 9; i += 256)
+    for (int i = 1024; i < num_vertices; i += 1024)
     {
-        std::cout << "Generating graph with " << i << " vertices and " << 6 << " neighbors per vertex...";
+        std::cout << "Generating graph with " << i << " vertices and " << i / neighbors_per_vertex << " neighbors per vertex...";
         std::cout.flush();
-        Graph graph(i, 6);
+        Graph graph(i, i / neighbors_per_vertex);
         std::cout << "\tDone" << std::endl;
+
+        out_file << i;
 
         // --- Running sequential Dijkstra on the CPU
         start = std::chrono::high_resolution_clock::now();
         auto shortest_distances_seq = dijkstra_sequential(graph, sourceVertex);
         finish = std::chrono::high_resolution_clock::now();
         print_results("CPU results", shortest_distances_seq, sourceVertex);
-        print_duration("CPU", start, finish);
+        print_duration("CPU", start, finish, out_file);
         shortest_distances_seq.clear();
 
         // --- Running parallel Dijkstra on the CPU with OMP
@@ -103,7 +119,7 @@ int main() {
         auto shortest_distances_omp = dijkstra_omp(graph, sourceVertex);
         finish = std::chrono::high_resolution_clock::now();
         print_results("CPU results (OpenMP)", shortest_distances_omp, sourceVertex);
-        print_duration("CPU (OpenMP)", start, finish);
+        print_duration("CPU (OpenMP)", start, finish, out_file);
         shortest_distances_omp.clear();
 
         // --- Running parallel Dijkstra on the CPU with OpenCL
@@ -113,7 +129,7 @@ int main() {
             auto shortest_distances_ocl_cpu = dijkstra_opencl(graph, sourceVertex, cpu_context);
             finish = std::chrono::high_resolution_clock::now();
             print_results("CPU results (OpenCL)", shortest_distances_ocl_cpu, sourceVertex);
-            print_duration("CPU (OpenCL)", start, finish);
+            print_duration("CPU (OpenCL)", start, finish, out_file);
             shortest_distances_ocl_cpu.clear();
         }
 
@@ -124,7 +140,7 @@ int main() {
             auto shortest_distances_ocl_gpu = dijkstra_opencl(graph, sourceVertex, gpu_context);
             finish = std::chrono::high_resolution_clock::now();
             print_results("GPU results (OpenCL)", shortest_distances_ocl_gpu, sourceVertex);
-            print_duration("GPU (OpenCL)", start, finish);
+            print_duration("GPU (OpenCL)", start, finish, out_file);
             shortest_distances_ocl_gpu.clear();
         }
 
@@ -137,6 +153,7 @@ int main() {
         shortest_distances_ocl_gpu.clear();
     #endif
 
+        out_file << std::endl;
     }
 
     return 0;

@@ -18,7 +18,7 @@ Graph::Graph(int num_vertexes, int neighbors_per_vertex) :
 
 void Graph::generate_data(int num_vertexes, int neighbors_per_vertex)
 {
-    #pragma omp parallel for 
+    #pragma omp parallel for
     for (int i = 0; i < num_vertexes; ++i)
     {
         this->vertex_array[i] = i * neighbors_per_vertex;
@@ -27,6 +27,7 @@ void Graph::generate_data(int num_vertexes, int neighbors_per_vertex)
     for (int k = 0; k < num_vertexes; ++k)
     {
         std::vector<int> temp_array(neighbors_per_vertex, INT_MAX);
+        #pragma omp parallel for shared(temp_array)
         for (int l = 0; l < neighbors_per_vertex; ++l)
         {
             bool skip_iteration = false;
@@ -167,46 +168,6 @@ int Graph::MinDistancesOMP(const std::vector<float>& shortest_path,
         #pragma omp barrier
 
         #pragma omp for nowait
-        for (auto v = 0ULL; v < this->vertex_array.size(); ++v)
-        {
-            if (finalized_verticies[v] == false && shortest_path[v] <= thread_min_dist)
-            {
-                thread_min_dist = shortest_path[v];
-                thread_min_vertex = v;
-            }
-        }
-        #pragma omp critical
-        {
-            if (thread_min_dist < min_dist)
-            {
-                min_dist = thread_min_dist;
-                min_vertex = thread_min_vertex;
-            }
-        }
-    }
-    return min_vertex;
-}
-
-
-int Graph::MinDistancesACC(const std::vector<float>& shortest_path,
-                           const std::vector<bool>& finalized_verticies,
-                           int start_vertex) const
-{
-    int min_vertex = start_vertex;
-    float min_dist = FLT_MAX;
-
-    float thread_min_dist;
-    int thread_min_vertex;
-
-    #pragma acc parallel private(thread_min_dist, thread_min_vertex) shared(shortest_path, finalized_verticies, start_vertex, min_vertex, min_dist)
-    {
-        std::cout << omp_get_num_threads() << std::endl;
-        thread_min_dist = min_dist;
-        thread_min_vertex = min_vertex;
-
-        #pragma omp barrier
-
-        #pragma acc loop
         for (auto v = 0ULL; v < this->vertex_array.size(); ++v)
         {
             if (finalized_verticies[v] == false && shortest_path[v] <= thread_min_dist)

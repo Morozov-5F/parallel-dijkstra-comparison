@@ -27,10 +27,6 @@ public:
     int MinDistancesOMP(const std::vector<float>& shortest_path,
                         const std::vector<bool>& finalized_verticies,
                         int start_vertex) const;
-
-    int MinDistancesACC(const std::vector<float>& shortest_path,
-                        const std::vector<bool>& finalized_verticies,
-                        int start_vertex) const;
 private:
     void generate_data(int num_vertexes, int neighbors_per_vertex);
 };
