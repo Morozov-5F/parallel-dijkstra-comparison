@@ -33,19 +33,20 @@ if (ENABLE_CUDA)
     CUDA_ADD_CUBLAS_TO_TARGET(${PROJECT_NAME}_cuda)
 endif()
 
-find_package(OpenACC)
-if (OpenACC_CXX_FOUND)
-    message("OpenACC support is enabled")
-endif()
-
 # Target for main executable
-add_executable(${PROJECT_NAME} src/main.cpp src/parallel.cpp src/parallel_cl.cpp src/parallel_omp.cpp src/sequential.cpp common/graph.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/parallel.cpp src/parallel_cl.cpp src/parallel_omp.cpp src/sequential.cpp common/graph.cpp src/parallel_acc.cpp)
 target_link_libraries(${PROJECT_NAME} ${OPENCL_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
 configure_file(src/gpu/dijkstra.cl ${CMAKE_CURRENT_BINARY_DIR}/dijkstra.cl COPYONLY)
 configure_file(misc/plot.gp ${CMAKE_CURRENT_BINARY_DIR}/plot.gp COPYONLY)
 if (ENABLE_CUDA)
     target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_cuda)
+endif()
+
+find_package(OpenACC)
+if (OpenACC_CXX_FOUND)
+    message("OpenACC support is enabled")
+    target_compile_options(${PROJECT_NAME} PRIVATE ${OpenACC_CXX_FLAGS})
 endif()
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wno-deprecated-declarations)
