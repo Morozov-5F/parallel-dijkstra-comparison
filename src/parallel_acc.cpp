@@ -5,7 +5,7 @@
 
 #define NUM_ASYNCHRONOUS_ITERATIONS 20  // Number of async loop iterations before attempting to read results back
 
-std::vector<float> dijkstra_acc(const __restrict Graph &graph, int source_vertex)
+std::vector<float> dijkstra_acc(const Graph &graph, int source_vertex)
 {
     auto number_of_vetecies = graph.vertex_array.size();
 
@@ -29,21 +29,16 @@ std::vector<float> dijkstra_acc(const __restrict Graph &graph, int source_vertex
     updating_distances[source_vertex] = 0.f;
 
     // --- Dijkstra iterations
-#pragma acc data copy(finalized_verticies.data(), distances.data(), updating_distances.dat())
     while (std::find(finalized_verticies.begin(), finalized_verticies.end(), true) != finalized_verticies.end())
     {
         for (int asyncIter = 0; asyncIter < NUM_ASYNCHRONOUS_ITERATIONS; asyncIter++)
         {
             // Kernel 1
             #pragma acc kernels loop independent
+            for (auto i = 0ULL; i < number_of_vetecies; ++i)
             {
-                for (auto i = 0ULL; i < number_of_vetecies; ++i)
+                if (finalized_verticies[i])
                 {
-                    if (!finalized_verticies[i])
-                    {
-                        continue;
-                    }
-
                     auto edge_start = graph.vertex_array[i];
                     auto edge_end = 0;
 
@@ -68,17 +63,15 @@ std::vector<float> dijkstra_acc(const __restrict Graph &graph, int source_vertex
             }
             // Kernel 2
             #pragma acc kernels loop independent
+            for (auto i = 0ULL; i < number_of_vetecies; ++i)
             {
-                for (auto i = 0ULL; i < number_of_vetecies; ++i)
+                if (distances[i] > updating_distances[i])
                 {
-                    if (distances[i] > updating_distances[i])
-                    {
-                        distances[i] = updating_distances[i];
-                        finalized_verticies[i] = true;
-                    }
-
-                    updating_distances[i] = distances[i];
+                    distances[i] = updating_distances[i];
+                    finalized_verticies[i] = true;
                 }
+
+                updating_distances[i] = distances[i];
             }
         }
     }
