@@ -83,6 +83,10 @@ int main() {
             break;
     }
 
+#if _OPENACC
+    acc_init(acc_device_nvidia);
+#endif
+
 #if 0
       // --- Allocate memory for arrays
     std::cout << "Generating graph...";
@@ -146,11 +150,20 @@ int main() {
 
     #if ENABLE_CUDA == 1
         std::chrono::high_resolution_clock::now();
-        auto shortest_distances_ocl_gpu = dijkstra_cuda(graph, sourceVertex);
+        auto shortest_distances_cuda_gpu = dijkstra_cuda(graph, sourceVertex);
         finish = std::chrono::high_resolution_clock::now();
-        print_results("GPU results (CUDA)", shortest_distances_ocl_gpu, sourceVertex);
+        print_results("GPU results (CUDA)", shortest_distances_cuda_gpu, sourceVertex);
         print_duration("GPU (CUDA)", start, finish, out_file);
-        shortest_distances_ocl_gpu.clear();
+        shortest_distances_cuda_gpu.clear();
+    #endif
+
+    #if _OPENACC
+        std::chrono::high_resolution_clock::now();
+        auto shortest_distances_openacc_gpu = dijkstra_openacc(graph, sourceVertex);
+        finish = std::chrono::high_resolution_clock::now();
+        print_results("GPU results (OpenACC)", shortest_distances_openacc_gpu, sourceVertex);
+        print_duration("GPU (OpenACC)", start, finish, out_file);
+        shortest_distances_openacc_gpu.clear();
     #endif
 
         out_file << std::endl;

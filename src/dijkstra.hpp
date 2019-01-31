@@ -32,3 +32,5 @@ ocl_init_result_t dijkstra_init_contexts(cl_context &gpu_context, cl_context &cp
 std::vector<float> dijkstra_opencl(const Graph &graph, int source_vertex, cl_context &opencl_context);
 
 std::vector<float> dijkstra_cuda(const Graph &graph, int sourceVertex);
+
+std::vector<float> dijkstra_acc(const __restrict Graph &graph, int source_vertex);
