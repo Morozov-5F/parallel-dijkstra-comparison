@@ -157,9 +157,9 @@ int main() {
         shortest_distances_cuda_gpu.clear();
     #endif
 
-    #if _OPENACC
+    #if 1
         std::chrono::high_resolution_clock::now();
-        auto shortest_distances_openacc_gpu = dijkstra_openacc(graph, sourceVertex);
+        auto shortest_distances_openacc_gpu = dijkstra_acc(graph, sourceVertex);
         finish = std::chrono::high_resolution_clock::now();
         print_results("GPU results (OpenACC)", shortest_distances_openacc_gpu, sourceVertex);
         print_duration("GPU (OpenACC)", start, finish, out_file);

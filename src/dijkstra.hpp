@@ -33,4 +33,4 @@ std::vector<float> dijkstra_opencl(const Graph &graph, int source_vertex, cl_con
 
 std::vector<float> dijkstra_cuda(const Graph &graph, int sourceVertex);
 
-std::vector<float> dijkstra_acc(const __restrict Graph &graph, int source_vertex);
+std::vector<float> dijkstra_acc(const Graph &graph, int source_vertex);

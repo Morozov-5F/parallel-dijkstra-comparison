@@ -29,7 +29,7 @@ std::vector<float> dijkstra_acc(const Graph &graph, int source_vertex)
     updating_distances[source_vertex] = 0.f;
 
     // --- Dijkstra iterations
-    while (std::find(finalized_verticies.begin(), finalized_verticies.end(), true) != finalized_verticies.end())
+    while (!std::all_of(finalized_verticies.cbegin(), finalized_verticies.cend(), [](bool i){ return i == false; }))
     {
         for (int asyncIter = 0; asyncIter < NUM_ASYNCHRONOUS_ITERATIONS; asyncIter++)
         {
@@ -41,6 +41,8 @@ std::vector<float> dijkstra_acc(const Graph &graph, int source_vertex)
                 {
                     auto edge_start = graph.vertex_array[i];
                     auto edge_end = 0;
+
+                    finalized_verticies[i] = false;
 
                     if (i + 1 < number_of_vetecies)
                     {
